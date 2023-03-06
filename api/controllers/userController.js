@@ -1,4 +1,5 @@
 const userService = require("../services/userService");
+
 const { asyncErrorHandler } = require("../utils/error");
 //회원가입
 const userSignUp = async (req, res) => {
@@ -7,6 +8,7 @@ const userSignUp = async (req, res) => {
   return res.status(201).json({ message: "회원가입 완료" });
 };
 // 로그인
+
 const userSignIn = async (req, res) => {
   const { id, password } = req.body;
   const token = await userService.userSignIn(id, password);

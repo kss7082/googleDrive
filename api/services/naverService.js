@@ -36,6 +36,7 @@ const naverLogin = async (code) => {
     }
 
     const accessToken = jwt.sign(
+
       {
         id: userData.id,
       },

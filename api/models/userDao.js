@@ -1,9 +1,11 @@
+
 const { MongoClient, LEGAL_TCP_SOCKET_OPTIONS } = require("mongodb");
 const client = new MongoClient("mongodb://localhost:27017/mydb");
 const database = client.db("mydb");
 const users = database.collection("users");
 const verification = database.collection("verification");
 const tokens = database.collection("tokens");
+
 
 const postUserNaverData = async (userData) => {
   return users.insertMany([
@@ -23,6 +25,7 @@ const findUserDataById = async (id) => {
   return users.findOne({ id: id });
 };
 
+
 const findUserIdbyPhoneNumber = async (phoneNumber, userName) => {
   const user = await users.findOne({
     phoneNumber: phoneNumber,
@@ -41,6 +44,7 @@ const postUserData = async (id, hashPassword, name, phoneNumber) => {
       password: hashPassword,
       phoneNumber: phoneNumber,
       name: name,
+
     },
   ]);
 };
@@ -53,6 +57,7 @@ const sendVerifyCode = async (phoneNumber, verifyCode, name) => {
     phoneNumber: phoneNumber,
     verifyCode: verifyCode,
     name: name,
+
     expiration: verificationExpiration,
   };
 
