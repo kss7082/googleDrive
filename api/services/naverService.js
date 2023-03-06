@@ -35,14 +35,29 @@ const naverLogin = async (code) => {
       await userDao.postUserNaverData(userData);
     }
 
-    const token = jwt.sign(
+    const accessToken = jwt.sign(
+
       {
         id: userData.id,
       },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
-    return token;
+
+    const refreshToken = jwt.sign(
+      {
+        id: userData.id,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    const tokens = [
+      { accessToken: accessToken, expirationTime: expireTime },
+      { refreshToken: refreshToken },
+    ];
+
+    return tokens;
   } catch (err) {
     console.error(err);
     return res.sendStatus(500);

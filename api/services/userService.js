@@ -1,41 +1,90 @@
 const userDao = require("../models/userDao");
-const { emailValidation, pwValidation } = require("../utils/validation-check");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const moment = require("moment");
+const verification = require("../utils/verification");
+const { throwCustomError } = require("../utils/error");
 
-const userSignUp = async (id, password, email, phoneNumber, address) => {
-  await pwValidation(password);
-  await emailValidation(email);
+const userSignUp = async (id, password, name, phoneNumber) => {
   const saltRounds = 10;
   const hashPassword = await bcrypt.hash(password, saltRounds);
-  return userDao.postUserData(id, hashPassword, email, phoneNumber, address);
+  return userDao.postUserData(id, hashPassword, name, phoneNumber);
 };
 
 const userSignIn = async (id, password) => {
   const user = await userDao.findUserDataById(id);
   if (!user) {
-    const err = new Error("일치하는 정보가 없습니다.");
-    err.statusCode = 409;
-    throw err;
+    throwCustomError("일치하는 정보가 없습니다", 409);
   }
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    const err = new Error("USER_IS_NOT_MATCH");
-    err.statusCode = 409;
-    throw err;
+    throwCustomError("비밀번호가 다릅니다.", 409);
   }
-  return jwt.sign({ id: user.id }, process.env.JWT_SECRET_KEY);
+  const accessToken = jwt.sign(
+    { id: user._id },
+    process.env.JWT_ACCESS_SECRET_KEY,
+    {
+      expiresIn: "1h",
+    }
+  );
+
+  const refreshToken = jwt.sign(
+    { id: user._id },
+    process.env.JWT_REFRESH_SECRET_KEY,
+    { expiresIn: "14d" }
+  );
+  const time = moment().add(1, "hour");
+  const expireTime = time.format("YYYY.MM.DD HH:mm:ss");
+
+  await userDao.postToken(refreshToken, user._id);
+
+  const tokens = [
+    { accessToken: accessToken, expirationTime: expireTime },
+    { refreshToken: refreshToken },
+  ];
+
+  return tokens;
 };
 
-const duplicateEmailCheck = async (email) => {
-  const user = userDao.findUserData(email);
-  if (user.length === 0) {
-    return user;
+const verifyCode = async (phoneNumber, code, userName) => {
+  if (!code) throwCustomError("인증번호를 입력해주세요", 409);
+  const verificationCode = await verification.verificationCode(
+    phoneNumber,
+    code,
+    userName
+  );
+
+  if (!verificationCode) throwCustomError("인증번호가 틀립니다", 409);
+  const findUserId = await userDao.findUserIdbyPhoneNumber(
+    phoneNumber,
+    userName
+  );
+
+  if (!findUserId) throwCustomError("일치하는 정보가 없습니다.", 409);
+
+  return findUserId;
+};
+
+const patchPassword = async (password, id) => {
+  const saltRounds = 10;
+  const hashPassword = await bcrypt.hash(password, saltRounds);
+  return await userDao.patchPassword(hashPassword, id);
+};
+
+const checkDuplicateId = async (id) => {
+  if (!id) throwCustomError("아이디를 입력해주세요", 409);
+  const result = await userDao.findUserDataById(id);
+  if (!result) {
+    return "사용가능한 아이디입니다.";
   } else {
-    const err = new Error("중복된 이메일입니다");
-    err.statusCode = 409;
-    throw err;
+    throwCustomError("중복되거나 탈퇴한 아이디입니다.", 409);
   }
 };
 
-module.exports = { userSignUp, userSignIn, duplicateEmailCheck };
+module.exports = {
+  userSignUp,
+  userSignIn,
+  verifyCode,
+  patchPassword,
+  checkDuplicateId,
+};
