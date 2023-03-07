@@ -21,7 +21,7 @@ const userSignIn = async (id, password) => {
     throwCustomError("비밀번호가 다릅니다.", 409);
   }
   const accessToken = jwt.sign(
-    { id: user._id },
+    { id: user.idNum },
     process.env.JWT_ACCESS_SECRET_KEY,
     {
       expiresIn: "1h",
@@ -29,14 +29,14 @@ const userSignIn = async (id, password) => {
   );
 
   const refreshToken = jwt.sign(
-    { id: user._id },
+    { id: user.idNum },
     process.env.JWT_REFRESH_SECRET_KEY,
     { expiresIn: "14d" }
   );
   const time = moment().add(1, "hour");
   const expireTime = time.format("YYYY.MM.DD HH:mm:ss");
 
-  await userDao.postToken(refreshToken, user._id);
+  await userDao.postToken(refreshToken, user.idNum, accessToken);
 
   const tokens = [
     { accessToken: accessToken, expirationTime: expireTime },
@@ -81,10 +81,53 @@ const checkDuplicateId = async (id) => {
   }
 };
 
+const reissuanceToken = async (refreshToken, accessToken) => {
+  const verificationToken = await userDao.reissuanceToken(
+    refreshToken,
+    accessToken
+  );
+
+  if (!verificationToken) throwCustomError("다시 로그인해주시길 바랍니다", 401);
+
+  const newAccessToken = jwt.sign(
+    { id: verificationToken.id },
+    process.env.JWT_ACCESS_SECRET_KEY,
+    {
+      expiresIn: "1h",
+    }
+  );
+
+  const newRefreshToken = jwt.sign(
+    { id: verificationToken.id },
+    process.env.JWT_ACCESS_SECRET_KEY,
+    {
+      expiresIn: "14d",
+    }
+  );
+
+  await userDao.updateTokens(
+    newAccessToken,
+    newRefreshToken,
+    refreshToken,
+    accessToken
+  );
+
+  const time = moment().add(1, "hour");
+  const expireTime = time.format("YYYY.MM.DD HH:mm:ss");
+
+  const token = [
+    { accessToken: newAccessToken, expirationTime: expireTime },
+    { refreshToken: newRefreshToken },
+  ];
+
+  return token;
+};
+
 module.exports = {
   userSignUp,
   userSignIn,
   verifyCode,
   patchPassword,
   checkDuplicateId,
+  reissuanceToken,
 };
