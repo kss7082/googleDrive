@@ -24,15 +24,3 @@ const getSpreadsheetSingleRange = async (spreadsheetId) => {
   console.log(result);
   return result;
 };
-
-const getSpreadsheetMultipleRange = async (spreadsheetId, ranges) => {
-  const response = await sheets.spreadsheets.values.batchGet({
-    spreadsheetId,
-    majorDimension: "columns",
-    ranges,
-  });
-  const numRows = response.data.values ? response.data.values.length : 0;
-  console.log(`${numRows} rows retrieved`);
-  console.log(response.data.values);
-  return response.data.values;
-};

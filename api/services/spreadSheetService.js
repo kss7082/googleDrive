@@ -15,6 +15,7 @@ const getSpreadSheetContent = async (spreadsheetId, range) => {
     majorDimension: "columns",
     range,
   });
+  
   const result = response.data.values;
   return spreadSheetDao.getSpreadSheetContentsRow(result);
 };

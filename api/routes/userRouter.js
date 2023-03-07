@@ -12,5 +12,6 @@ router.post("/message", naverController.sendVerifyCode);
 router.get("/verifycode", userController.verifyCode);
 router.patch("/password", userController.patchPassword);
 router.get("/duplicate-id", userController.checkDuplicateId);
+router.post("/token", userController.reissuanceToken);
 
 module.exports = { router };

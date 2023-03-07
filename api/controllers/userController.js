@@ -1,5 +1,4 @@
 const userService = require("../services/userService");
-
 const { asyncErrorHandler } = require("../utils/error");
 //회원가입
 const userSignUp = async (req, res) => {
@@ -8,7 +7,6 @@ const userSignUp = async (req, res) => {
   return res.status(201).json({ message: "회원가입 완료" });
 };
 // 로그인
-
 const userSignIn = async (req, res) => {
   const { id, password } = req.body;
   const token = await userService.userSignIn(id, password);
@@ -33,6 +31,12 @@ const checkDuplicateId = asyncErrorHandler(async (req, res) => {
   const result = await userService.checkDuplicateId(id);
   return res.status(200).json({ message: result });
 });
+// 토큰 재발급
+const reissuanceToken = asyncErrorHandler(async (req, res) => {
+  const { refreshtoken, accesstoken } = req.headers;
+  const result = await userService.reissuanceToken(refreshtoken, accesstoken);
+  return res.status(201).json({ tokens: result });
+});
 
 module.exports = {
   userSignUp,
@@ -40,4 +44,5 @@ module.exports = {
   verifyCode,
   patchPassword,
   checkDuplicateId,
+  reissuanceToken,
 };
